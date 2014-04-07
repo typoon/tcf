@@ -1,0 +1,8 @@
+Cannot start a text section iwth a number
+Diagram gets too big with long messages and does not come back to original size after the message is shortened.
+
+
+TODOS:
+	Add a way to write text in bold
+	Add a TITLE: command
+

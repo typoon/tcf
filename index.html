@@ -1,0 +1,67 @@
+<html>
+    <head>
+        <title></title>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="./css/bootstrap.min.css">
+
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="./css/bootstrap-theme.min.css">
+
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="./js/bootstrap.min.js"></script>
+
+        <script src="colors.js"></script>
+        <script src="diagram.js"></script>
+    </head>
+
+    <body>
+        <div class="navbar navbar-inverse navbar-static-top" role="navigation">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">Call Flow Generator</a>
+                </div>
+                <div class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <li class="active"><a href="#">Home</a></li>
+                    </ul>
+                </div><!--/.nav-collapse -->
+            </div>
+        </div>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <form class="form-inline" role="form">
+                            <textarea id="code" class="form-control" rows="25" style="width:100%">
+NODES: MUE TCS FUE SSF SCF
+
+MUE TCS INVITE
+TCS MUE TRYING
+SSF SCF INITIALDP
+SCF SSF RRB
+SCF SSF CONNECT
+TCS FUE INVITE
+FUE TCS TRYING
+FUE TCS RINGING
+TCS MUE RINGING
+FUE TCS OK(INVITE)
+TCS MUE OK(INVITE)
+MUE TCS BYE
+SSF SCF ERRB
+SSF SCF ACR
+TCS FUE BYE
+FUE TCS OK(BYE)
+TCS MUE OK(BYE)
+MUE TCS 1 XYZ
+TCS FUE 1 ABC
+                            </textarea>
+                            <input type="button" onclick="parse()" value="Parse!" class="btn btn-primary btn-block">
+                            <input type="button" onclick="save()" value="Save!" class="btn btn-success btn-block">
+                    </form>
+                </div>
+                <div class="col-md-9">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
