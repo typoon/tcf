@@ -1,217 +1,292 @@
 WIDTH_SPACE = 100;
 HEIGHT_SPACE = 30;
-FONT_SIZE = 10;
 
-var nodes = new Array();
-var connections = new Array();
+function _TCF() {
 
-// Function taken from:
-// http://stackoverflow.com/questions/3885817/how-to-check-if-a-number-is-float-or-integer
-function isInt(n) {
-    ret = typeof n === 'number' && parseFloat(n) == parseInt(n, 10) && !isNaN(n);
-    return ret;
+    LEFT_MARGIN = 10;
+    RIGHT_MARGIN = 10;
+
+    this.nodes = new Array();
+    this.connections = new Array();
+    this.title;
+    this.font_size = 10;
+
+    this.addNode = function(name) {
+
+        if(this.nodes.indexOf(name) >= 0)
+            return;
+
+        node = {
+            "name" : name,
+            "x"    : 0,
+            "y"    : 0
+        }
+
+        this.nodes.push(node);
+    }
+
+    this.findNode = function(name) {
+        for(var i = 0; i < this.nodes.length; i++) {
+            if(this.nodes[i].name == name) {
+                return this.nodes[i];
+            }
+        }
+
+        return "";
+    }
+
+    this.addConnection = function(from, to, text) {
+
+        var connection = {
+            "from":     this.findNode(from),
+            "to":       this.findNode(to),
+            "group":    "",
+            "text":     text,
+            "color":    colors[this.nodes.indexOf(from)],
+            "type":     "arrow"
+        }
+
+        this.connections.push(connection);
+
+    }
+
+    this.addBox = function(from, to, text) {
+        var connection = {
+            "from":     this.findNode(from),
+            "to":       this.findNode(to),
+            "group":    "",
+            "text":     text,
+            "color":    colors[this.nodes.indexOf(from)],
+            "type":     "box"
+        }
+
+        this.connections.push(connection);
+    }
+
+    this.getNodeMaxDistance = function(a, b) {
+        ret = 10;
+
+        console.log("getNodeMaxDistance");
+
+        for(var i = 0; i < this.connections.length; i++) {
+            c = this.connections[i];
+
+            if((c.from.name == a.name && c.to.name == b.name) || (c.from.name == b.name && c.to.name == a.name)) {
+                t = c.text;
+                t = t.split("\\n");
+
+                // Check what is the longest sentence
+                for(var j = 0; j < t.length; j++) {
+                    if(t[j].length > ret) {
+                        ret = t[j].length;
+                    }
+                }
+            }
+        }
+
+        return ret * this.font_size;
+    }
+
+    this.getCanvasWidth = function() {
+        ret = 0;
+
+        console.log("getCanvasWidth");
+
+        for(var i = 0; i < this.nodes.length-1; i++) {
+            ret += this.getNodeMaxDistance(this.nodes[i], this.nodes[i+1]);
+        }
+
+        ret = this.nodes[this.nodes.length-1].x;
+
+        return ret + LEFT_MARGIN + RIGHT_MARGIN;
+    }
+
+    this.getCanvasHeight = function() {
+
+        ret = 1;
+        console.log("getCanvasHeight");
+
+        for(var i = 0; i < this.connections.length; i++) {
+            c = this.connections[i];
+            t = c.text;
+            ret += t.split("\\n").length * this.font_size;
+
+            console.log("ret = " + ret);
+
+            switch(c.type) {
+                case "box":
+                    ret += 50;
+                break;
+
+                case "arrow":
+                    ret += 30;
+                break;
+            }
+        }
+
+        return ret + 50;
+
+    }
+
+    // Call me after all nodes and connections have been added!
+    this.doMagic = function() {
+
+        this.nodes[0].x = LEFT_MARGIN;
+
+        console.log("this.nodes = " + this.nodes.length);
+
+        for(var i = 0; i < this.nodes.length-1; i++) {
+            d = this.getNodeMaxDistance(this.nodes[i], this.nodes[i+1]);
+            this.nodes[i+1].x = this.nodes[i].x + d + LEFT_MARGIN;
+        }
+    }
 }
 
-function draw() {
+var TCF = new _TCF();
+console.log(TCF);
 
+function draw() {
     var canvas = document.getElementById("canvas");
     var ctx = canvas.getContext("2d");
 
-    // Determine the distance between each vertical line based
-    // on the longest text to be printed
-    for(i = 0; i < connections.length; i++) {
-        tmp = connections[i].text.length * FONT_SIZE + 10;
-        if(tmp > WIDTH_SPACE) {
-            WIDTH_SPACE = tmp;
-        }
-    }
+    canvas_width = 0;
 
-    canvas.width = (nodes.length * WIDTH_SPACE) + 50;
-    canvas.height = (connections.length * HEIGHT_SPACE) + 30;
+    TCF.doMagic();
+    canvas.width = TCF.getCanvasWidth();
+    canvas.height = TCF.getCanvasHeight();
 
-    // Draw the vertical lines
-    for(i = 0; i < nodes.length; i++) {
-
-        x = (WIDTH_SPACE * i) + 10;
+    for(var i = 0; i < TCF.nodes.length; i++) {
+        x = TCF.nodes[i].x;
         y = (canvas.height - 20);
 
-        ctx.font = FONT_SIZE+"px Arial";
-        ctx.fillText(nodes[i], x, 10);
+        console.log(TCF.nodes[i].name + " pos x = " + x);
+
+        ctx.font = TCF.font_size+"px Arial";
+        ctx.fillText(TCF.nodes[i].name, x, 10);
         ctx.moveTo(x, 15);
         ctx.lineTo(x, y);
         ctx.stroke();
-
     }
 
-    line = 0;
+    var counter = 0;
+    y = 20; // After headers
 
-    // Draw horizontal lines that connect the vertical lines
-    for(i = 0; i < connections.length; i++, line++) {
-        con = connections[i];
+    for(var i = 0; i < TCF.connections.length; i++) {
+        c = TCF.connections[i];
+
+        y += c.text.split("\\n").length * TCF.font_size; // Text space
+
+        x0 = c.from.x;
+        x1 = c.to.x;
 
         ctx.beginPath();
-        ctx.fillStyle = con.color
-        //ctx.strokeStyle = con.color
 
-        x0 = nodes.indexOf(con.from) * WIDTH_SPACE + 10;
-        x1 = nodes.indexOf(con.to) * WIDTH_SPACE + 10;
+        switch(c.type) {
+            case "arrow": {
+                counter += 1;
+                ctx.moveTo(x0, y);
+                ctx.lineTo(x1, y);
+                ctx.stroke();
 
-        if(con.group != "") {
-            for(j = 0; j < connections.length; j++) {
-                if(con.group == connections[j].group) {
-                    y = j * HEIGHT_SPACE + 30;
-                    con.text = j + ". " + con.text;
-                    break;
+                // Draw the arrow at the line
+                ctx.beginPath();
+                if(x0 > x1) { // From right to left
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1+8, y-3);
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1+8, y+3);
+                } else {
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1-8, y-3);
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1-8, y+3);
                 }
+                ctx.stroke();
+
+                x  = x0 > x1 ? x1 : x0;
+                x += 12;
+                text = counter + ". " + c.text;
+                ctx.font = TCF.font_size+"px Arial";
+                ctx.fillText(text, x, y + 10);
+
+
+                y += 20; // Arrow space
+
             }
-        } else {
-            y = line * HEIGHT_SPACE + 30;
-            con.text = i + ". " + con.text
-        }
+            break;
 
+            case "box": {
+                x = x0 > x1 ? x1 : x0;
+                x += 10;
+                width = Math.abs(x0-x1); //x0 > x1 ? x0 - x1 : x1 - x0;
+                width -= 20;
 
-        if(con.type == "box") {
-            ctx.beginPath();
-            ctx.fillStyle = con.color;
-            ctx.fillRect(x0+10, y, x1, HEIGHT_SPACE);
+                height = c.text.split("\\n").length * TCF.font_size + 10;
 
-            ctx.beginPath();
-            ctx.fillStyle = '#000000'
-            ctx.font = FONT_SIZE+"px Arial";
-            ctx.fillText(con.text, x0 +10 , y + 10);
-            //line += 1;
+                ctx.fillStyle = "#000000";
+                ctx.fillRect(x, y, width, height);
+                ctx.stroke();
 
-            ctx.stroke();
-            continue;
-        }
-
-        ctx.moveTo(x0, y);
-        ctx.lineTo(x1, y);
-        ctx.stroke();
-
-        // Draw the arrow at the line
-        if(x0 > x1) { // From right to left
-            ctx.moveTo(x1, y);
-            ctx.lineTo(x1+8, y-3);
-            ctx.moveTo(x1, y);
-            ctx.lineTo(x1+8, y+3);
-        } else {
-            ctx.moveTo(x1, y);
-            ctx.lineTo(x1-8, y-3);
-            ctx.moveTo(x1, y);
-            ctx.lineTo(x1-8, y+3);
-        }
-        ctx.stroke();
-
-        x = x0 > x1 ? x1 : x0;
-        x+= 10;
-
-        text = '';
-        if(con.text.length > (WIDTH_SPACE/FONT_SIZE)-1) {
-            place = (WIDTH_SPACE/FONT_SIZE) - 1
-            for(j = 0; j < con.text.length; j++) {
-                if((j+1) % place  == 0) {
-                    text += "";
+                strs = c.text.split("\\n");
+                for(var j = 0; j < strs.length; j++) {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = TCF.font_size+"px Arial";
+                    ctx.fillText(strs[j], x, y + 10*(j+1));
                 }
-                text += con.text[j];
+
+                y += 30;
             }
-        } else {
-            text = con.text
+            break;
         }
 
-        ctx.font = FONT_SIZE+"px Arial";
-        ctx.fillText(text, x, y + 10);
     }
-
 }
 
 function parse(data) {
 
     data = document.getElementById("code").value;
-    nodes = new Array();
-    connections = new Array();
+    TCF = new _TCF();
 
     lines = data.split("\n");
     //console.log(lines);
 
-    line = lines[0].trim().replace(/(\s\s+)/g, ' ').split(' ');
+    for(var i = 0; i < lines.length; i++) {
 
-    if (line[0] != "NODES:") {
-        alert("First line should be NODES: ");
-        return -1;
-    }
-
-    if (line.length < 3) {
-        alert("At least 2 nodes should be specified");
-        return -1;
-    }
-
-    for(i = 1; i < line.length; i++) {
-        if(nodes.indexOf(line[i]) < 0) {
-            nodes.push(line[i]);
-        }
-    }
-
-    //console.log("Nodes = " + nodes);
-
-    for(i = 1; i < lines.length; i++) {
         if(lines[i].trim() == "")
             continue;
 
-        line = lines[i].trim().replace(/(\s\s+)/g, ' ').split(' ');
+        tokens = lines[i].trim().replace(/(\s\s+)/g, ' ').split(' ');
 
-        if(line.length < 2) {
-            alert("Cannot parse: " + lines[i] + ". Check line " + (i+1));
-            return;
+        switch(tokens[0]) {
+            case 'NODES:':
+                for(var j = 1; j < tokens.length; j++) {
+                    TCF.addNode(tokens[j]);
+                }
+                continue;
+            break;
+
+            case 'TITLE:':
+                TCF.title = tokens.slice(1).join(' ');
+                continue;
+            break;
         }
 
-        if(line[0] == '.BOX') {
-            connection = {
-                "from":     line[1],
-                "to":       line[2],
-                "group":    "",
-                "text":     line.slice(4).join(' '),
-                "color":    "#ff0000", //colors[nodes.indexOf(line[0])],
-                "type":     "box"
-            }
+        from = tokens[0]; // Origin
+        to = tokens[1]; // Destiny
 
-            console.log(connection);
-        } else {
+        switch(tokens[2]) {
+            case 'a:':
+                TCF.addConnection(from, to, tokens.slice(3).join(' '));
+            break;
 
-            if(nodes.indexOf(line[0]) < 0) {
-                alert("Cannot find node " + line[0] + " in node list. Check line " + (i+1));
+            case 'b:':
+                TCF.addBox(from, to, tokens.slice(3).join(' '));
+            break;
+
+            default:
+                alert("Invalid token: " + tokens);
                 return;
-            }
-
-            if(nodes.indexOf(line[1]) < 0) {
-                alert("Cannot find node " + line[1] + " in node list. Check line " + (i+1));
-                return;
-            }
-
-
-            if(isInt(parseInt(line[2]))) {
-                connection = {
-                    "from":     line[0],
-                    "to":       line[1],
-                    "group":    line[2],
-                    "text":     line[3],
-                    "color":    colors[nodes.indexOf(line[0])],
-                    "type":     "connection"
-                }
-            } else {
-                connection = {
-                    "from":     line[0],
-                    "to":       line[1],
-                    "group":    "",
-                    "text":     line[2],
-                    "color":    colors[nodes.indexOf(line[0])],
-                    "type":     "connection"
-                }
-            }
         }
-
-        connections.push(connection);
-
     }
 
     draw();
