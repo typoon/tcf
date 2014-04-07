@@ -116,11 +116,11 @@ function _TCF() {
 
             switch(c.type) {
                 case "box":
-                    ret += 50;
+                    ret += 30;
                 break;
 
                 case "arrow":
-                    ret += 30;
+                    ret += 20;
                 break;
             }
         }
@@ -155,12 +155,19 @@ function draw() {
     canvas.width = TCF.getCanvasWidth();
     canvas.height = TCF.getCanvasHeight();
 
+    // Draw the vertical lines
     for(var i = 0; i < TCF.nodes.length; i++) {
         x = TCF.nodes[i].x;
         y = (canvas.height - 20);
 
+        ctx.beginPath();
+        ctx.fillStyle = "#000000";
         ctx.font = TCF.font_size+"px Arial";
         ctx.fillText(TCF.nodes[i].name, x, 10);
+
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        ctx.fillStyle = "#f5f5f5";
         ctx.moveTo(x, 15);
         ctx.lineTo(x, y);
         ctx.stroke();
