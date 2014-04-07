@@ -17,9 +17,10 @@ function _TCF() {
             return;
 
         node = {
-            "name" : name,
-            "x"    : 0,
-            "y"    : 0
+            "name"  : name,
+            "x"     : 0,
+            "y"     : 0,
+            "color" : colors[this.nodes.length] 
         }
 
         this.nodes.push(node);
@@ -42,7 +43,7 @@ function _TCF() {
             "to":       this.findNode(to),
             "group":    "",
             "text":     text,
-            "color":    colors[this.nodes.indexOf(from)],
+            "color":    this.findNode(from).color,
             "type":     "arrow"
         }
 
@@ -64,9 +65,7 @@ function _TCF() {
     }
 
     this.getNodeMaxDistance = function(a, b) {
-        ret = 10;
-
-        console.log("getNodeMaxDistance");
+        ret = 10 * this.font_size;
 
         for(var i = 0; i < this.connections.length; i++) {
             c = this.connections[i];
@@ -77,20 +76,25 @@ function _TCF() {
 
                 // Check what is the longest sentence
                 for(var j = 0; j < t.length; j++) {
+                    /*
                     if(t[j].length > ret) {
                         ret = t[j].length;
+                    }
+                    */
+
+                    if(ret < measureText(t[j], this.font_size, null).width) {
+                        ret = measureText(t[j], this.font_size, null).width;
                     }
                 }
             }
         }
 
-        return ret * this.font_size;
+        ret += ret * 0.2;
+        return ret;
     }
 
     this.getCanvasWidth = function() {
         ret = 0;
-
-        console.log("getCanvasWidth");
 
         for(var i = 0; i < this.nodes.length-1; i++) {
             ret += this.getNodeMaxDistance(this.nodes[i], this.nodes[i+1]);
@@ -104,14 +108,11 @@ function _TCF() {
     this.getCanvasHeight = function() {
 
         ret = 1;
-        console.log("getCanvasHeight");
 
         for(var i = 0; i < this.connections.length; i++) {
             c = this.connections[i];
             t = c.text;
             ret += t.split("\\n").length * this.font_size;
-
-            console.log("ret = " + ret);
 
             switch(c.type) {
                 case "box":
@@ -143,7 +144,6 @@ function _TCF() {
 }
 
 var TCF = new _TCF();
-console.log(TCF);
 
 function draw() {
     var canvas = document.getElementById("canvas");
@@ -158,8 +158,6 @@ function draw() {
     for(var i = 0; i < TCF.nodes.length; i++) {
         x = TCF.nodes[i].x;
         y = (canvas.height - 20);
-
-        console.log(TCF.nodes[i].name + " pos x = " + x);
 
         ctx.font = TCF.font_size+"px Arial";
         ctx.fillText(TCF.nodes[i].name, x, 10);
@@ -207,6 +205,7 @@ function draw() {
                 x += 12;
                 text = counter + ". " + c.text;
                 ctx.font = TCF.font_size+"px Arial";
+                ctx.fillStyle = c.color;
                 ctx.fillText(text, x, y + 10);
 
 
