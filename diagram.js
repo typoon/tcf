@@ -57,7 +57,7 @@ function _TCF() {
             "to":       this.findNode(to),
             "group":    "",
             "text":     text,
-            "color":    colors[this.nodes.indexOf(from)],
+            "color":    this.findNode(from).color,
             "type":     "box"
         }
 
@@ -155,10 +155,21 @@ function draw() {
     canvas.width = TCF.getCanvasWidth();
     canvas.height = TCF.getCanvasHeight();
 
+
+    var extra = 0;
+    for(var i = 0; i < TCF.connections.length; i++) {
+        c = TCF.connections[i];
+
+        if(c.text.split("\\n").length > 0)
+            extra += 15;
+    }
+
+
+
     // Draw the vertical lines
     for(var i = 0; i < TCF.nodes.length; i++) {
         x = TCF.nodes[i].x;
-        y = (canvas.height - 20);
+        y = (canvas.height - 20) + extra+100;
 
         ctx.beginPath();
         ctx.fillStyle = "#000000";
@@ -166,11 +177,13 @@ function draw() {
         ctx.fillText(TCF.nodes[i].name, x, 10);
 
         ctx.beginPath();
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.fillStyle = "#f5f5f5";
+        ctx.strokeStyle = "#aaaaaa";
         ctx.moveTo(x, 15);
         ctx.lineTo(x, y);
         ctx.stroke();
+        ctx.closePath();
     }
 
     var counter = 0;
@@ -179,44 +192,53 @@ function draw() {
     for(var i = 0; i < TCF.connections.length; i++) {
         c = TCF.connections[i];
 
-        y += c.text.split("\\n").length * TCF.font_size; // Text space
+        //y += c.text.split("\\n").length * TCF.font_size; // Text space
+        if(c.text.split("\\n").length > 0)
+            y+= 15;
 
         x0 = c.from.x;
         x1 = c.to.x;
 
-        ctx.beginPath();
-
         switch(c.type) {
             case "arrow": {
-                counter += 1;
-                ctx.moveTo(x0, y);
-                ctx.lineTo(x1, y);
-                ctx.stroke();
-
-                // Draw the arrow at the line
                 ctx.beginPath();
-                if(x0 > x1) { // From right to left
-                    ctx.moveTo(x1, y);
-                    ctx.lineTo(x1+8, y-3);
-                    ctx.moveTo(x1, y);
-                    ctx.lineTo(x1+8, y+3);
-                } else {
-                    ctx.moveTo(x1, y);
-                    ctx.lineTo(x1-8, y-3);
-                    ctx.moveTo(x1, y);
-                    ctx.lineTo(x1-8, y+3);
-                }
-                ctx.stroke();
 
-                x  = x0 > x1 ? x1 : x0;
-                x += 12;
-                text = counter + ". " + c.text;
-                ctx.font = TCF.font_size+"px Arial";
-                ctx.fillStyle = c.color;
-                ctx.fillText(text, x, y + 10);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "#000000";
+                    counter += 1;
+                    ctx.moveTo(x0, y);
+                    ctx.lineTo(x1, y);
+                    ctx.stroke();
 
+                    // Draw the arrow at the line
+                    if(x0 > x1) { // From right to left
+                        ctx.moveTo(x1, y);
+                        ctx.lineTo(x1+8, y-3);
+                        ctx.moveTo(x1, y);
+                        ctx.lineTo(x1+8, y+3);
+                    } else {
+                        ctx.moveTo(x1, y);
+                        ctx.lineTo(x1-8, y-3);
+                        ctx.moveTo(x1, y);
+                        ctx.lineTo(x1-8, y+3);
+                    }
+                    ctx.stroke();
 
-                y += 20; // Arrow space
+                ctx.closePath();
+
+                ctx.beginPath();
+
+                    x  = x0 > x1 ? x1 : x0;
+                    x += 12;
+                    text = counter + ". " + c.text;
+                    ctx.font = TCF.font_size+"px Arial";
+                    ctx.fillStyle = c.color.stroke;
+                    ctx.fillText(text, x, y + 10);
+                    ctx.stroke();
+
+                    y += 20; // Arrow space
+
+                ctx.closePath();
 
             }
             break;
@@ -224,23 +246,39 @@ function draw() {
             case "box": {
                 x = x0 > x1 ? x1 : x0;
                 x += 10;
+                y -= 15;
                 width = Math.abs(x0-x1); //x0 > x1 ? x0 - x1 : x1 - x0;
                 width -= 20;
 
                 height = c.text.split("\\n").length * TCF.font_size + 10;
 
-                ctx.fillStyle = "#000000";
-                ctx.fillRect(x, y, width, height);
-                ctx.stroke();
+                ctx.beginPath();
 
+                    ctx.fillStyle = c.color.fill;
+                    ctx.strokeStyle = c.color.stroke;
+                    ctx.fillRect(x, y, width, height);
+                    ctx.strokeRect(x, y, width, height);
+                    ctx.stroke();
+
+                ctx.closePath();
+
+                x += 5;
                 strs = c.text.split("\\n");
-                for(var j = 0; j < strs.length; j++) {
-                    ctx.fillStyle = "#ffffff";
-                    ctx.font = TCF.font_size+"px Arial";
-                    ctx.fillText(strs[j], x, y + 10*(j+1));
-                }
 
-                y += 30;
+
+                ctx.beginPath();
+
+                    for(var j = 0; j < strs.length; j++) {
+                        y += 1;
+                        ctx.fillStyle = "#000000";
+                        ctx.font = TCF.font_size+"px Arial";
+                        ctx.fillText(strs[j], x, y + 10*(j+1));
+                        ctx.stroke();
+                    }
+
+                ctx.closePath();
+
+                y += height;
             }
             break;
         }
@@ -250,7 +288,9 @@ function draw() {
 
 function parse(data) {
 
-    data = document.getElementById("code").value;
+    if(!data)
+        data = document.getElementById("code").value;
+
     TCF = new _TCF();
 
     lines = data.split("\n");
@@ -302,4 +342,28 @@ function save() {
     var canvas = document.getElementById("canvas");
     l = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
     window.location.href = l;
+}
+
+function getQueryVariable(variable) {
+    var query = window.location.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
+        if (decodeURIComponent(pair[0]) == variable) {
+            return decodeURIComponent(pair[1]);
+        }
+    }
+    console.log('Query variable %s not found', variable);
+    return "";
+}
+
+function onload() {
+    var txt = getQueryVariable("txt");
+    if(txt == "") {
+        return;
+    }
+
+    parse(txt);
+    save();
+           
 }
